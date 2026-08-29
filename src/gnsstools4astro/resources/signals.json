@@ -1,0 +1,49 @@
+[
+  {
+    "constellation": "GPS",
+    "eirp_dbw": 24.6,
+    "rhcp": true,
+    "signals": [
+      {"name": "L5", "frequency": "1176.45 MHz", "modulation": "BPSK(10)"},
+      {"name": "L2C", "frequency": "1227.60 MHz", "modulation": "BPSK(1)"},
+      {"name": "L1 C/A", "frequency": "1575.42 MHz", "modulation": "BPSK(1)"},
+      {"name": "L1C", "frequency": "1575.42 MHz", "modulation": "BOC(1,1)"}
+    ]
+  },
+  {
+    "constellation": "GALILEO",
+    "eirp_dbw": 25.8,
+    "rhcp": true,
+    "signals": [
+      {"name": "E5a", "frequency": "1176.45 MHz", "modulation": "QPSK(10)"},
+      {"name": "E5b", "frequency": "1207.14 MHz", "modulation": "QPSK(10)"},
+      {"name": "E6B", "frequency": "1278.75 MHz", "modulation": "BPSK(5)"},
+      {"name": "E1b/c", "frequency": "1575.42 MHz", "modulation": "CBOC(6,1,1/11)"}
+    ]
+  },
+  {
+    "constellation": "BEIDOU",
+    "eirp_dbw": 24.6,
+    "rhcp": true,
+    "signals": [
+      {"name": "B2a", "frequency": "1176.45 MHz", "modulation": "BPSK(10)"},
+      {"name": "B2I", "frequency": "1207.14 MHz", "modulation": "BPSK(2)"},
+      {"name": "B2b", "frequency": "1207.14 MHz", "modulation": "BPSK(10)"},
+      {"name": "B3I", "frequency": "1268.52 MHz", "modulation": "BPSK(10)"},
+      {"name": "B1I", "frequency": "1561.098 MHz", "modulation": "BPSK(2)"},
+      {"name": "B1C", "frequency": "1575.42 MHz", "modulation": "BOC(1,1)"}
+    ]
+  },
+  {
+    "constellation": "GLONASS",
+    "eirp_dbw": 21.1,
+    "rhcp": true,
+    "signals": [
+      {"name": "L3OC", "frequency": "1202.025 MHz", "modulation": "BPSK(10)"},
+      {"name": "L2OF", "frequency": "1246.00 MHz", "modulation": "BPSK(0.5)"},
+      {"name": "L2OC", "frequency": "1248.06 MHz", "modulation": "BOC(1,1)"},
+      {"name": "L1OC", "frequency": "1600.995 MHz", "modulation": "BOC(1,1)"},
+      {"name": "L1OF", "frequency": "1602.00 MHz", "modulation": "BPSK(0.5)"}
+    ]
+  }
+]
