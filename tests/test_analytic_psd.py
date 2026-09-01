@@ -1,0 +1,114 @@
+"""\
+Módulo: tests/test_analytic_psd.py
+
+Descrição:
+    Testes das PSDs analíticas de modulações GNSS (``analytic_psd``).
+
+Copyright BINGO Collaboration
+Last modified: 2026-08-31
+"""
+
+from __future__ import annotations
+
+import numpy as np
+import pytest
+
+from gnsstools4astro.domain.analytic_psd import (
+    LOW_FLOOR_DB,
+    analytic_psd,
+    boc_sin_psd,
+    bpsk_r_psd,
+    parse_modulation,
+    psd_db,
+    psd_w_per_hz,
+)
+
+_FC = 1575.42e6
+
+
+def _dense_grid(half_mhz: float = 40.0, step_hz: float = 1e4) -> np.ndarray:
+    """Grid denso centrado na portadora para verificar integrais."""
+    n = int(2 * half_mhz * 1e6 / step_hz) + 1
+    return _FC + np.linspace(-half_mhz * 1e6, half_mhz * 1e6, n)
+
+
+class TestBpsk:
+    def test_peak_at_carrier(self):
+        f = _dense_grid()
+        g = bpsk_r_psd(f - _FC, 1.023e6)
+        assert g.max() == pytest.approx(1.0 / 1.023e6, rel=1e-3)
+
+    def test_unit_integral(self):
+        f = _dense_grid()
+        g = bpsk_r_psd(f - _FC, 1.023e6)
+        integral = np.trapezoid(g, f)
+        assert integral == pytest.approx(1.0, rel=2e-2)
+
+
+class TestBoc:
+    def test_null_at_carrier(self):
+        f = _dense_grid()
+        g = boc_sin_psd(f - _FC, 1.023e6, 1.023e6)
+        assert g[np.argmin(np.abs(f - _FC))] == pytest.approx(0.0, abs=1e-20)
+
+    def test_unit_integral(self):
+        f = _dense_grid()
+        g = boc_sin_psd(f - _FC, 1.023e6, 1.023e6)
+        integral = np.trapezoid(g, f)
+        assert integral == pytest.approx(1.0, rel=2e-2)
+
+    def test_no_nan(self):
+        f = _dense_grid()
+        g = boc_sin_psd(f - _FC, 1.023e6, 1.023e6)
+        assert np.isfinite(g).all()
+
+
+class TestDispatch:
+    @pytest.mark.parametrize(
+        "mod",
+        ["BPSK(1)", "BPSK(10)", "BPSK(0.5)", "QPSK(0.5)", "BOC(1,1)", "BOC(6,1)"],
+    )
+    def test_known_modulations(self, mod):
+        f = _dense_grid()
+        g = analytic_psd(mod, f, _FC)
+        assert g.shape == f.shape
+        assert np.isfinite(g).all()
+        assert g.min() >= 0.0
+
+    def test_cboc(self):
+        f = _dense_grid()
+        g = analytic_psd("CBOC(6,1,1/11)", f, _FC)
+        assert g.shape == f.shape
+        assert np.isfinite(g).all()
+        integral = np.trapezoid(g, f)
+        assert integral == pytest.approx(1.0, rel=3e-2)
+
+    def test_unsupported_raises(self):
+        with pytest.raises(NotImplementedError, match="não suportada"):
+            analytic_psd("UNKNOWN", np.array([_FC]), _FC)
+
+    def test_parse_bpsk(self):
+        assert parse_modulation("BPSK(10)") == {"kind": "bpsk", "n": 10.0}
+
+    def test_parse_cboc(self):
+        p = parse_modulation("CBOC(6,1,1/11)")
+        assert p["kind"] == "cboc"
+        assert p["weights"] == pytest.approx([10 / 11, 1 / 11])
+
+
+class TestScaling:
+    def test_psd_w_per_hz(self):
+        g = bpsk_r_psd(np.array([0.0]), 1.023e6)
+        assert psd_w_per_hz(g, 288.0)[0] == pytest.approx(288.0 / 1.023e6)
+
+    def test_psd_db_floor(self):
+        db = psd_db(np.array([1e-300, 1e3]))
+        assert db[0] == pytest.approx(LOW_FLOOR_DB)
+        assert db[1] == pytest.approx(30.0)
+
+    def test_no_high_floor_far_from_carrier(self):
+        """Longe da portadora a PSD decai (sem piso de ruído de Welch)."""
+        f = np.array([_FC - 227.0e6, _FC + 227.0e6])  # ~227 MHz de afastamento
+        g = bpsk_r_psd(f - _FC, 1.023e6)
+        db = psd_db(g)
+        assert (db < -100.0).all()

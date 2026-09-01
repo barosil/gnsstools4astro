@@ -23,15 +23,28 @@ F_REL = -4.442807633e-10  # s/sqrt(m) - correção relativística
 _GPS_EPOCH = datetime(1980, 1, 6, tzinfo=UTC)
 _WEEK_S = 7 * 86400.0
 
-# GLONASS (ICD): raio equatorial e taxa de rotação (para a correção).
-_J2 = 1.0826257e-3
-_GLONASS_EARTH_RADIUS_M = 6378136.0
-_GLONASS_MU = 3.9860044e14
+
+def _as_utc(dt: datetime) -> datetime:
+    """Normaliza um ``datetime`` para UTC aware.
+
+    ``datetime`` naive é interpretado como UTC (convenção do projeto). Isso
+    torna o propagador robusto a chamadas com tempos naive (ex.: grades
+    construídas por ``TimeRange.to_datetime64``) ou aware em outro fuso.
+    """
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=UTC)
+    return dt.astimezone(UTC)
 
 
 def _gps_seconds(dt: datetime) -> float:
     """Segundos desde a época GPS (1980-01-06 UTC)."""
-    return (dt - _GPS_EPOCH).total_seconds()
+    return (_as_utc(dt) - _GPS_EPOCH).total_seconds()
+
+
+# GLONASS (ICD): raio equatorial e taxa de rotação (para a correção).
+_J2 = 1.0826257e-3
+_GLONASS_EARTH_RADIUS_M = 6378136.0
+_GLONASS_MU = 3.9860044e14
 
 
 def _solve_kepler(m: np.ndarray, e: float) -> np.ndarray:
@@ -47,7 +60,7 @@ def _solve_kepler(m: np.ndarray, e: float) -> np.ndarray:
 
 def clock_correction(eph: BroadcastEphemeris, t: datetime) -> float:
     """Correção de relógio do satélite (s) no instante ``t`` (UTC)."""
-    dt = (t - eph.toc).total_seconds()
+    dt = (_as_utc(t) - eph.toc).total_seconds()
     return eph.af0 + eph.af1 * dt + eph.af2 * dt * dt
 
 

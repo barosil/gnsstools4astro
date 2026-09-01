@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import numpy as np
 from gnsstools4astro.domain.station import GNSSStation
@@ -20,6 +20,13 @@ from skyfield.positionlib import Geocentric
 
 _AU = 149597870700.0  # metros por unidade astronômica
 _SECONDS_PER_DAY = 86400.0
+
+
+def _as_utc(dt: datetime) -> datetime:
+    """Normaliza um ``datetime`` para UTC aware (naive = UTC)."""
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=UTC)
+    return dt.astimezone(UTC)
 
 
 @dataclass(frozen=True)
@@ -67,6 +74,7 @@ class SkyfieldTracks:
         SkyPosition
             Alt/az (graus), RA/Dec (graus, ICRS) e distância topocêntrica (km).
         """
+        t = _as_utc(t)  # skyfield exige datetime aware (UTC)
         p0 = np.asarray(ecef(t - timedelta(seconds=dt_s)), dtype=float)
         p1 = np.asarray(ecef(t + timedelta(seconds=dt_s)), dtype=float)
         pos_m = np.asarray(ecef(t), dtype=float)

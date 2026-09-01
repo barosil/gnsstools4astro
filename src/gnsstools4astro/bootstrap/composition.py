@@ -16,6 +16,7 @@ from gnsstools4astro.application.services.track_builder import TrackBuilder
 from gnsstools4astro.application.use_cases import (
     BuildTracksUseCase,
     DownloadRinexUseCase,
+    EstimateLinkBudgetUseCase,
     EstimateSignalUseCase,
 )
 from gnsstools4astro.domain.constellations import get_constellation_signals
@@ -47,9 +48,24 @@ def build_signal_use_case() -> EstimateSignalUseCase:
     return EstimateSignalUseCase(estimator=estimator, signals_by_constellation=signals)
 
 
+def build_link_budget_use_case(
+    *,
+    receiver_gain_dbi: float = 0.0,
+    t_noise_k: float = 290.0,
+) -> EstimateLinkBudgetUseCase:
+    """Constrói o caso de uso de link budget com a referência do pacote."""
+    signals = get_constellation_signals()
+    return EstimateLinkBudgetUseCase(
+        signals_by_constellation=signals,
+        receiver_gain_dbi=receiver_gain_dbi,
+        t_noise_k=t_noise_k,
+    )
+
+
 # Reexportado para conveniência (utilizado por testes e exemplos).
 __all__ = [
     "build_download_use_case",
+    "build_link_budget_use_case",
     "build_signal_use_case",
     "build_tracks_use_case",
     "propagate",
