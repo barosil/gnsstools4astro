@@ -51,7 +51,7 @@ def obs_file(sample_dir: Path) -> Path:
     return sample_dir / "braz1621.24d"
 
 
-def pytest_configure(config):
+def pytest_configure(config):  # noqa: ARG001
     # Recursos não fechados de libs de terceiros geram ResourceWarning no __del__
     warnings.filterwarnings(
         "ignore",
