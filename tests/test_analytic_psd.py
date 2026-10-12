@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-
 from gnsstools4astro.domain.analytic_psd import (
     LOW_FLOOR_DB,
     analytic_psd,
@@ -112,3 +111,45 @@ class TestScaling:
         g = bpsk_r_psd(f - _FC, 1.023e6)
         db = psd_db(g)
         assert (db < -100.0).all()
+
+
+class TestWideBandExtension:
+    """PSD estendida realisticamente por toda a banda da simulação.
+
+    Regressão para a correção que evita "artefatos de linha" ao longo de toda
+    a banda de frequência durante o trânsito: a PSD é avaliada pela cauda
+    analítica (``sinc²``/BOC) em TODO o grid, sem ser truncada a uma janela de
+    ~20 MHz nem substituída por um piso constante.
+    """
+
+    def _bingo_band(self) -> np.ndarray:
+        """Grid estilo BINGO: 980–1260 MHz em passos de 1 MHz."""
+        return np.arange(980.0, 1260.0 + 1e-9, 1.0) * 1e6
+
+    def test_psd_independent_of_grid_extent(self) -> None:
+        """A PSD não depende da largura da banda (sem truncagem/windowing).
+
+        Se a PSD fosse truncada a uma janela de ~20 MHz, os pontos comuns
+        entre um grid estreito e um grid largo difeririam nas bordas.
+        """
+        fc = 1176.45e6
+        wide = self._bingo_band()
+        narrow = np.arange(1000.0, 1200.0 + 1e-9, 1.0) * 1e6
+
+        d_wide = psd_db(analytic_psd("BPSK(10)", wide, fc))
+        d_narrow = psd_db(analytic_psd("BPSK(10)", narrow, fc))
+
+        common = (wide >= 1000e6) & (wide <= 1200e6)
+        np.testing.assert_allclose(d_wide[common], d_narrow, rtol=0.0, atol=1e-9)
+
+    def test_not_truncated_to_floor_across_band(self) -> None:
+        fc = 1176.45e6
+        f = self._bingo_band()
+        db = psd_db(analytic_psd("BPSK(10)", f, fc))
+        # Truncar em ±10 MHz deixaria ~90% da banda no piso numérico. Aqui só
+        # eventuais nulos ESTRUTURAIS (zeros da sinc²) tocam o piso.
+        n_floor = int((db <= LOW_FLOOR_DB + 1.0).sum())
+        assert n_floor <= 5
+        # Extremos da banda muito acima do piso (cauda real, não truncada).
+        assert db[0] > -200.0
+        assert db[-1] > -200.0
