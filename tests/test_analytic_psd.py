@@ -80,7 +80,8 @@ class TestDispatch:
         assert g.shape == f.shape
         assert np.isfinite(g).all()
         integral = np.trapezoid(g, f)
-        assert integral == pytest.approx(1.0, rel=3e-2)
+        # O filtro de transmissão remove ~4% (cauda além de ~12 MHz).
+        assert integral == pytest.approx(1.0, rel=6e-2)
 
     def test_unsupported_raises(self):
         with pytest.raises(NotImplementedError, match="não suportada"):
@@ -153,3 +154,18 @@ class TestWideBandExtension:
         # Extremos da banda muito acima do piso (cauda real, não truncada).
         assert db[0] > -200.0
         assert db[-1] > -200.0
+
+
+class TestTxFilterFloor:
+    """Filtro de transmissão (~24 MHz) + piso fora de banda de -60 dBc/370 MHz."""
+
+    def test_far_band_sits_on_flat_floor(self) -> None:
+        f = np.arange(980.0, 1260.0 + 1e-9, 1.0) * 1e6
+        g = analytic_psd("BPSK(10)", f, 1176.45e6)
+        far = np.abs(f - 1176.45e6) > 40e6
+        floor = 10 ** (-6.0) / 370e6
+        np.testing.assert_allclose(g[far], floor, rtol=1e-6)
+
+    def test_in_band_peak_preserved(self) -> None:
+        f = np.array([_FC])
+        assert analytic_psd("BPSK(1)", f, _FC)[0] == pytest.approx(1 / 1.023e6, rel=1e-3)

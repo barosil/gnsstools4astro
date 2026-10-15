@@ -31,6 +31,15 @@ CHIP_RATE_HZ = 1.023e6
 # Piso numérico (dB) para evitar -inf em representações logarítmicas.
 LOW_FLOOR_DB = -300.0
 
+# Filtro de transmissão do satélite: banda ~24 MHz (GPS ICD; cobre o lóbulo
+# principal do BPSK(10) e o CBOC), queda Butterworth e piso fora de banda
+# espalhado numa banda de referência de 370 MHz (a cauda sinc² não existe
+# após o filtro/amplificador).
+TX_FILTER_BW_HZ = 24.0e6
+TX_FILTER_ORDER = 16
+OOB_POWER_DBC = -60.0
+OOB_REFERENCE_BW_HZ = 370e6
+
 
 def _sinc(x: NDArray[np.floating]) -> NDArray[np.floating]:
     """sinc normalizado ``sin(πx)/(πx)`` (``np.sinc``)."""
@@ -204,13 +213,38 @@ def analytic_psd(
     f = np.asarray(freq_hz, dtype=float) - float(fc_hz)
     p = parse_modulation(modulation)
     if p["kind"] in ("bpsk", "qpsk"):
-        return bpsk_r_psd(f, p["n"] * CHIP_RATE_HZ)
-    if p["kind"] == "boc":
-        return boc_sin_psd(f, p["n"] * CHIP_RATE_HZ, p["m"] * CHIP_RATE_HZ)
-    if p["kind"] == "cboc":
-        return cboc_psd(f, p["chip_rate"], p["subcarriers"], p["weights"])
-    msg = f"Modulação {modulation} não suportada"
-    raise NotImplementedError(msg)
+        g = bpsk_r_psd(f, p["n"] * CHIP_RATE_HZ)
+    elif p["kind"] == "boc":
+        g = boc_sin_psd(f, p["n"] * CHIP_RATE_HZ, p["m"] * CHIP_RATE_HZ)
+    elif p["kind"] == "cboc":
+        g = cboc_psd(f, p["chip_rate"], p["subcarriers"], p["weights"])
+    else:
+        msg = f"Modulação {modulation} não suportada"
+        raise NotImplementedError(msg)
+    return apply_tx_filter(g, f)
+
+
+def apply_tx_filter(
+    psd: NDArray[np.floating],
+    offset_hz: NDArray[np.floating],
+    *,
+    bandwidth_hz: float = TX_FILTER_BW_HZ,
+    order: int = TX_FILTER_ORDER,
+    oob_dbc: float = OOB_POWER_DBC,
+    reference_bw_hz: float = OOB_REFERENCE_BW_HZ,
+) -> NDArray[np.floating]:
+    """Aplica o filtro de transmissão e o piso fora de banda à PSD normalizada.
+
+    ``G_out = G · |H(f)|² + 10^(oob_dbc/10) / reference_bw_hz``, com
+    ``|H|² = 1/(1+(2|f|/BW)^(2·order))`` (Butterworth passa-baixas em banda base).
+    O piso é constante (independente do grid): potência fora de banda de
+    ``oob_dbc`` espalhada uniformemente em ``reference_bw_hz``.
+    """
+    x = 2.0 * np.abs(np.asarray(offset_hz, dtype=float)) / bandwidth_hz
+    with np.errstate(over="ignore"):
+        h2 = 1.0 / (1.0 + x ** (2 * order))
+    floor = 10.0 ** (oob_dbc / 10.0) / reference_bw_hz
+    return np.asarray(psd, dtype=float) * h2 + floor
 
 
 def psd_w_per_hz(
