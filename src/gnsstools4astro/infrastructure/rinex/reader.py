@@ -116,8 +116,7 @@ class RinexReader:
                 continue
             if constellation is Constellation.GLONASS:
                 continue
-            for eph in self._sv_kepler_series(nav, sv):
-                ephs.append(eph)
+            ephs.extend(self._sv_kepler_series(nav, sv))
         return ephs
 
     def _sv_kepler_series(
@@ -310,9 +309,7 @@ class RinexReader:
             for t, val in zip(times, values, strict=False):
                 if np.isnan(val):
                     continue
-                samples.append(
-                    SignalSample(time=_to_datetime(t), sv=sv, cn0_dbhz=float(val))
-                )
+                samples.append(SignalSample(time=_to_datetime(t), sv=sv, cn0_dbhz=float(val)))
         return samples
 
     def mean_cn0_per_sv(
@@ -334,9 +331,7 @@ class RinexReader:
         """
         if "time" not in obs.coords:
             return []
-        s_vars = [
-            v for v in obs.data_vars if v.startswith("S") and "time" in obs[v].dims
-        ]
+        s_vars = [v for v in obs.data_vars if v.startswith("S") and "time" in obs[v].dims]
         if not s_vars:
             return []
         # Média por sinal ao longo do tempo → array sobre sv.

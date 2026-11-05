@@ -16,6 +16,7 @@ import shutil
 import time
 import zipfile
 from pathlib import Path
+from typing import Self
 
 import httpx
 from dotenv import find_dotenv, load_dotenv
@@ -40,9 +41,21 @@ _CDDIS_HOST = "cddis.nasa.gov"
 
 # Extensões reconhecidas como "arquivo RINEX" após descompressão.
 _RINEX_SUFFIXES = (
-    ".rnx", ".obs", ".nav",
-    ".o", ".n", ".g", ".l", ".p", ".d",
-    ".21o", ".21n", ".22o", ".22n", ".23o", ".23n",
+    ".rnx",
+    ".obs",
+    ".nav",
+    ".o",
+    ".n",
+    ".g",
+    ".l",
+    ".p",
+    ".d",
+    ".21o",
+    ".21n",
+    ".22o",
+    ".22n",
+    ".23o",
+    ".23n",
 )
 
 # RINEX 2.x: extensão ".{ano}{tipo}" — ex.: braz1621.24d (obs CRINEX),
@@ -79,7 +92,7 @@ class RinexDownloader:
         """Fecha o cliente HTTP subjacente."""
         self._client.close()
 
-    def __enter__(self) -> RinexDownloader:
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, *exc: object) -> None:
@@ -125,9 +138,7 @@ class RinexDownloader:
                     duration_ms=duration_ms,
                     attempt=attempt,
                 )
-                if response.status_code != 200 or self._looks_like_login_page(
-                    url, response
-                ):
+                if response.status_code != 200 or self._looks_like_login_page(url, response):
                     msg = (
                         f"HTTP {response.status_code} ao baixar {url} "
                         f"(tentativa {attempt}/{_RETRIES})"
@@ -173,9 +184,7 @@ class RinexDownloader:
             if response.status_code not in (301, 302, 303, 307, 308) or not location:
                 break
             next_url = (
-                location
-                if location.startswith("http")
-                else str(httpx.URL(location).join(url))
+                location if location.startswith("http") else str(httpx.URL(location).join(url))
             )
             headers = auth_header if _URSA_HOST in next_url else {}
             response = self._client.get(next_url, follow_redirects=False, headers=headers)

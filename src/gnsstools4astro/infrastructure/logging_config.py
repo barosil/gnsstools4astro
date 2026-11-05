@@ -55,7 +55,7 @@ class StructuredLogger:
     def exception(self, event: str, **kwargs: Any) -> None:
         msg_dict = {"event": event}
         msg_dict.update(kwargs)
-        self._logger.exception(msg_dict, exc_info=True)
+        self._logger.exception(msg_dict)
 
 
 def get_logger(name: str) -> StructuredLogger:

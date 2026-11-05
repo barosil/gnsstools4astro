@@ -88,7 +88,7 @@ class GnssCatalog:
             )
             Database = engine_mod.Database
             SatID = models_mod.SatID
-            from sqlmodel import select  # noqa: PLC0415
+            from sqlmodel import select
 
             db = Database()
             out: dict[Constellation, list[CatalogEntry]] = {c: [] for c in _GNSS_CONSTELLATIONS}
@@ -103,7 +103,7 @@ class GnssCatalog:
             if all(out.values()):
                 return out
             return None
-        except Exception:
+        except Exception:  # noqa: BLE001 - fallback DB→recurso; load() propaga erro claro
             return None
 
     @staticmethod
@@ -117,11 +117,10 @@ class GnssCatalog:
                 if const is None:
                     continue
                 out[const] = [
-                    CatalogEntry(norad_id=int(e["norad_id"]), name=e["name"])
-                    for e in entries
+                    CatalogEntry(norad_id=int(e["norad_id"]), name=e["name"]) for e in entries
                 ]
             return out
-        except Exception:
+        except Exception:  # noqa: BLE001 - fallback recurso; load() propaga erro claro
             return None
 
     @classmethod
@@ -168,7 +167,7 @@ def fetch_historical_tles(
             "radioskysims_sources.infrastructure.external.satellite_downloader"
         )
         SpaceTrackClient = st_mod.SpaceTrackClient
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - re-raise com mensagem clara
         msg = f"SpaceTrackClient do radioskysims indisponível: {exc}"
         raise RuntimeError(msg) from None
 
@@ -340,17 +339,17 @@ def broadcast_ecef_at(
     casamento TLE→SV por distância mínima. Para cada SV seleciona a efeméride
     com época mais próxima de ``t_ref`` (evita extrapolar a última do arquivo).
     """
-    from gnsstools4astro.infrastructure.ephemeris.broadcast import (  # noqa: PLC0415
+    from gnsstools4astro.infrastructure.ephemeris.broadcast import (
         propagate,
     )
-    from gnsstools4astro.infrastructure.rinex.reader import RinexReader  # noqa: PLC0415
+    from gnsstools4astro.infrastructure.rinex.reader import RinexReader
 
     reader = RinexReader()
     all_ephs: list = []
     for path in nav_paths:
         try:
             nav = reader.load_nav(path)
-        except Exception:
+        except Exception:  # noqa: BLE001, S112 - arquivo NAV inválido ignorado
             continue
         for sv_raw in nav["sv"].to_numpy():
             sv = str(sv_raw)

@@ -88,11 +88,7 @@ def propagate_kepler(eph: BroadcastEphemeris, times) -> np.ndarray:
     toe = _gps_seconds(eph.toe)
     toe_sow = toe % _WEEK_S  # segundos de semana (termo da rotação da Terra)
 
-    dt_sv = (
-        eph.af0
-        + eph.af1 * (t_arr - toc)
-        + eph.af2 * (t_arr - toc) ** 2
-    )
+    dt_sv = eph.af0 + eph.af1 * (t_arr - toc) + eph.af2 * (t_arr - toc) ** 2
     # Correção relativística: F · e · sqrt(a) · sin(Ek)
     a = eph.sqrt_a**2
     n0 = math.sqrt(MU / a**3)

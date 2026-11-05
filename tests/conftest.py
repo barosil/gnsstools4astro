@@ -13,14 +13,7 @@ from pathlib import Path
 import pytest
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-_SAMPLE = (
-    PROJECT_ROOT
-    / "src"
-    / "GNSStools4Astro"
-    / "RinexDownloader"
-    / "data"
-    / "braz_20240610"
-)
+_SAMPLE = PROJECT_ROOT / "src" / "GNSStools4Astro" / "RinexDownloader" / "data" / "braz_20240610"
 
 
 @pytest.fixture(scope="session")

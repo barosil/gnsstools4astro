@@ -7,10 +7,7 @@ from datetime import datetime, timedelta
 from gnsstools4astro.domain.rinex import RinexFileType, RinexRequest, RinexSource
 
 # RBMC/IBGE — raiz do serviço (padrão). Os dados ficam em ``/dados/{year}/{doy}``.
-RBMC_BASE = (
-    "https://geoftp.ibge.gov.br/informacoes_sobre_posicionamento_geodesico"
-    "/rbmc"
-)
+RBMC_BASE = "https://geoftp.ibge.gov.br/informacoes_sobre_posicionamento_geodesico/rbmc"
 
 # RBMC/IBGE — RINEX 3 (padrão para observações): ``dados_RINEX3/{year}/{doy}``.
 # Arquivos diários de 15 s em CRINEX (``_MO.crx.gz``), ID de 9 caracteres.
@@ -103,10 +100,7 @@ def build_cddis_brdc_url(dt: datetime) -> str:
     """
     doy = _doy(dt)
     yy = _yy(dt)
-    return (
-        f"{CDDIS_BASE}/{dt.year}/{doy}/{yy}p/"
-        f"BRDC00IGS_R_{dt.year}{doy}0000_01D_MN.rnx.gz"
-    )
+    return f"{CDDIS_BASE}/{dt.year}/{doy}/{yy}p/BRDC00IGS_R_{dt.year}{doy}0000_01D_MN.rnx.gz"
 
 
 def build_url(

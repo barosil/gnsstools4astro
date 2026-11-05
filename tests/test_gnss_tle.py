@@ -58,7 +58,9 @@ def test_tle_tracks_dataset() -> None:
     ds = TleTracksBuilder(station, min_alt_deg=-90.0).build([_gps_tle()], times=times)
     assert ds.sizes["time"] == 2
     assert ds.sizes["sv"] == 1
-    assert {"alt_deg", "az_deg", "ra_deg", "dec_deg", "distance_km", "ecef_x_m"} <= set(ds.data_vars)
+    assert {"alt_deg", "az_deg", "ra_deg", "dec_deg", "distance_km", "ecef_x_m"} <= set(
+        ds.data_vars
+    )
     # Raio orbital GPS ~26.560 km.
     r = np.hypot(
         ds["ecef_x_m"].values, np.hypot(ds["ecef_y_m"].values, ds["ecef_z_m"].values)

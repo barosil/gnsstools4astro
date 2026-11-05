@@ -121,11 +121,11 @@ class TrackBuilder:
         records: list[tuple[datetime, str, float, float, float, float, float]] = []
         for eph in ephemerides:
             sv = eph.sv
-            ecef_fn = lambda t, e=eph: propagate(e, t)  # noqa: E731
+            ecef_fn = lambda t, e=eph: propagate(e, t)
             for t in grid:
                 try:
                     sp = sky.ecef_to_sky(ecef_fn, t)
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001 - posição de SV best-effort
                     logger.debug("sky_position_failed", sv=sv, time=t.isoformat(), error=str(exc))
                     continue
                 if sp.alt_deg < min_alt:
@@ -159,7 +159,7 @@ class TrackBuilder:
         for path in nav_paths:
             try:
                 nav = self._parser.load_nav(path)
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 - carga de NAV best-effort
                 logger.warning("nav_load_failed", path=str(path), error=str(exc))
                 continue
             ephemerides.extend(self._parser.to_ephemerides(nav))
@@ -194,9 +194,7 @@ def _select_per_sv(
         if current is None:
             best[key] = eph
             continue
-        newer = (
-            _epoch(eph) >= _epoch(current) if ref is None else distance(eph) < distance(current)
-        )
+        newer = _epoch(eph) >= _epoch(current) if ref is None else distance(eph) < distance(current)
         if newer:
             best[key] = eph
     return list(best.values())

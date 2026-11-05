@@ -14,9 +14,7 @@ from typing import Any
 from .satellite import Constellation
 from .signal import ConstellationSignals, FrequencyBand
 
-_DEFAULT_RESOURCE = (
-    Path(__file__).resolve().parents[1] / "resources" / "signals.json"
-)
+_DEFAULT_RESOURCE = Path(__file__).resolve().parents[1] / "resources" / "signals.json"
 
 _FREQ_SCALE = {"Hz": 1.0, "kHz": 1e3, "MHz": 1e6, "GHz": 1e9}
 

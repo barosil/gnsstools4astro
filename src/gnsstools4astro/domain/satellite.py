@@ -54,10 +54,7 @@ class Satellite(BaseModel):
     def _check_consistency(self) -> Satellite:
         expected = constellation_from_sv(self.sv)
         if expected is not self.constellation:
-            msg = (
-                f"constelação {self.constellation.value} incompatível com "
-                f"SV {self.sv!r}"
-            )
+            msg = f"constelação {self.constellation.value} incompatível com SV {self.sv!r}"
             raise ValueError(msg)
         return self
 

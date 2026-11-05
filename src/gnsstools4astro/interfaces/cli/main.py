@@ -8,8 +8,6 @@ Subcomandos:
 * ``sync-signals`` — sincroniza ``signals.json`` para um destino.
 """
 
-# ruff: noqa: T201
-
 from __future__ import annotations
 
 import argparse
@@ -57,7 +55,9 @@ def _parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=True)
 
     p_dl = sub.add_parser("download", help="Baixa RINEX (obs+nav) de uma estação num intervalo")
-    p_dl.add_argument("--station", default=DEFAULT_STATION, help=f"Estação (padrão: {DEFAULT_STATION})")
+    p_dl.add_argument(
+        "--station", default=DEFAULT_STATION, help=f"Estação (padrão: {DEFAULT_STATION})"
+    )
     p_dl.add_argument("--start", required=True, help="Início UTC (YYYY-MM-DDTHH:MM)")
     p_dl.add_argument("--end", required=True, help="Fim UTC (YYYY-MM-DDTHH:MM)")
     p_dl.add_argument("--source", default="rbmc", choices=[s.value for s in RinexSource])
@@ -65,10 +65,18 @@ def _parser() -> argparse.ArgumentParser:
 
     p_tr = sub.add_parser("tracks", help="Constrói tracks de satélites a partir de NAV")
     p_tr.add_argument("--nav", nargs="+", required=True, help="Arquivo(s) NAV (.n/.g/.l/.rnx)")
-    p_tr.add_argument("--station", default=DEFAULT_STATION, help=f"Nome da estação (padrão: {DEFAULT_STATION})")
-    p_tr.add_argument("--lat", type=float, default=DEFAULT_STATION_POSITION.lat_deg, help="Latitude (graus)")
-    p_tr.add_argument("--lon", type=float, default=DEFAULT_STATION_POSITION.lon_deg, help="Longitude (graus)")
-    p_tr.add_argument("--height", type=float, default=DEFAULT_STATION_POSITION.height_m, help="Altitude (m)")
+    p_tr.add_argument(
+        "--station", default=DEFAULT_STATION, help=f"Nome da estação (padrão: {DEFAULT_STATION})"
+    )
+    p_tr.add_argument(
+        "--lat", type=float, default=DEFAULT_STATION_POSITION.lat_deg, help="Latitude (graus)"
+    )
+    p_tr.add_argument(
+        "--lon", type=float, default=DEFAULT_STATION_POSITION.lon_deg, help="Longitude (graus)"
+    )
+    p_tr.add_argument(
+        "--height", type=float, default=DEFAULT_STATION_POSITION.height_m, help="Altitude (m)"
+    )
     p_tr.add_argument("--start", default=None, help="Início UTC (opcional)")
     p_tr.add_argument("--end", default=None, help="Fim UTC (opcional)")
     p_tr.add_argument("--step", type=float, default=600.0, help="Passo da grade (s)")
@@ -82,7 +90,11 @@ def _parser() -> argparse.ArgumentParser:
     p_sg.add_argument("--json", action="store_true", help="Saída em JSON")
 
     p_sync = sub.add_parser("sync-signals", help="Sincroniza signals.json para um destino")
-    p_sync.add_argument("--target", required=True, help="Caminho de destino (ex.: src/radioskysims/resources/signals.json)")
+    p_sync.add_argument(
+        "--target",
+        required=True,
+        help="Caminho de destino (ex.: src/radioskysims/resources/signals.json)",
+    )
 
     return parser
 
@@ -159,7 +171,9 @@ def run(argv, use_cases: GNSS4AstroCLIUseCases) -> int:
             ]
             print(json.dumps(payload, indent=2))
         else:
-            print(f"{'sv':<5} {'const':<9} {'C/N0(dB-Hz)':>12} {'P_rec(W)':>12} {'PSD(W/Hz)':>14} {'EIRP(dBW)':>10}")
+            print(
+                f"{'sv':<5} {'const':<9} {'C/N0(dB-Hz)':>12} {'P_rec(W)':>12} {'PSD(W/Hz)':>14} {'EIRP(dBW)':>10}"
+            )
             for s in summaries:
                 print(
                     f"{s.sv:<5} {s.constellation.value:<9} "

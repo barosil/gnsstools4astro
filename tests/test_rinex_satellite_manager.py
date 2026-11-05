@@ -26,9 +26,7 @@ from radioskysims_core.domain.common import FrequencyRange, TimeRange
 
 def _synthetic_nav() -> xr.Dataset:
     """Dataset NAV GPS sintético (2 SVs, 2 épocas)."""
-    times = np.array(
-        ["2024-06-10T00:00:00", "2024-06-10T01:00:00"], dtype="datetime64[ns]"
-    )
+    times = np.array(["2024-06-10T00:00:00", "2024-06-10T01:00:00"], dtype="datetime64[ns]")
     svs = ["G01", "G02"]
 
     def full(value: float):
@@ -86,9 +84,7 @@ def test_build_tracks_empty_manager():
 
 def test_build_assembled_tracks_and_signals():
     mgr = RinexSatelliteManager.from_nav_dataset(_synthetic_nav())
-    tr = TimeRange.from_iso(
-        "2024-06-10T00:00:00", "2024-06-10T01:00:00", 60, u.s
-    )
+    tr = TimeRange.from_iso("2024-06-10T00:00:00", "2024-06-10T01:00:00", 60, u.s)
     # FR cobrindo as portadoras GPS L5 (1176.45) e L2C (1227.60) MHz
     fr = FrequencyRange(min_mhz=1100.0, max_mhz=1300.0, resolution_mhz=1.0)
 
@@ -121,9 +117,7 @@ def test_build_assembled_tracks_and_signals():
 def test_build_signals_empty_when_fr_outside_gnss():
     """FR sem portadora GNSS dentro → PSD toda no piso (sem artefato)."""
     mgr = RinexSatelliteManager.from_nav_dataset(_synthetic_nav())
-    tr = TimeRange.from_iso(
-        "2024-06-10T00:00:00", "2024-06-10T01:00:00", 60, u.s
-    )
+    tr = TimeRange.from_iso("2024-06-10T00:00:00", "2024-06-10T01:00:00", 60, u.s)
     fr = FrequencyRange(min_mhz=1000.0, max_mhz=1010.0, resolution_mhz=5.0)
     asm = mgr.build(tr, fr)
     assert asm.signals.sizes["sv"] == 2
@@ -134,14 +128,10 @@ def test_build_signals_empty_when_fr_outside_gnss():
 def test_estimate_link_budget_from_obs():
     """Link budget: obs (C/N0) + tracks (nav) → estimativas de EIRP."""
     mgr = RinexSatelliteManager.from_nav_dataset(_synthetic_nav())
-    tr = TimeRange.from_iso(
-        "2024-06-10T00:00:00", "2024-06-10T03:00:00", 60, u.s
-    )
+    tr = TimeRange.from_iso("2024-06-10T00:00:00", "2024-06-10T03:00:00", 60, u.s)
     mgr.build_tracks(time_range=tr)  # cacheia distâncias
 
-    times = np.array(
-        ["2024-06-10T00:00:00", "2024-06-10T01:00:00"], dtype="datetime64[ns]"
-    )
+    times = np.array(["2024-06-10T00:00:00", "2024-06-10T01:00:00"], dtype="datetime64[ns]")
     obs = xr.Dataset(
         {"S1C": (("time", "sv"), np.array([[45.0, 43.0], [46.0, 44.0]]))},
         coords={"time": times, "sv": ["G01", "G02"]},
@@ -154,9 +144,7 @@ def test_estimate_link_budget_from_obs():
 
 def test_build_empty_manager_raises():
     mgr = RinexSatelliteManager(satellites=[], ephemerides=[])
-    tr = TimeRange.from_iso(
-        "2024-06-10T00:00:00", "2024-06-10T01:00:00", 60, u.s
-    )
+    tr = TimeRange.from_iso("2024-06-10T00:00:00", "2024-06-10T01:00:00", 60, u.s)
     fr = FrequencyRange(min_mhz=1000.0, max_mhz=1010.0, resolution_mhz=5.0)
     with pytest.raises(RuntimeError, match="for_station"):
         mgr.build(tr, fr)
@@ -179,18 +167,14 @@ def test_download_nav_cache_hit(tmp_path, monkeypatch):
     fake = cache / "pbcg2131.26n"
     fake.write_text("dummy")
 
-    mgr = RinexSatelliteManager.for_station(
-        "pbcg", ref_date=datetime(2026, 8, 1), cache_dir=cache
-    )
+    mgr = RinexSatelliteManager.for_station("pbcg", ref_date=datetime(2026, 8, 1), cache_dir=cache)
     called: list[Path] = []
 
     def fake_from_nav(cls, path):
         called.append(path)
         return cls.from_nav_dataset(_synthetic_nav())
 
-    monkeypatch.setattr(
-        RinexSatelliteManager, "from_nav", classmethod(fake_from_nav)
-    )
+    monkeypatch.setattr(RinexSatelliteManager, "from_nav", classmethod(fake_from_nav))
     nav = mgr.download_nav()
     assert nav == fake
     assert called == [fake]
@@ -204,18 +188,14 @@ def test_download_obs_cache_hit(tmp_path):
     fake = cache / "pbcg2131.26o"
     fake.write_text("dummy")
 
-    mgr = RinexSatelliteManager.for_station(
-        "pbcg", ref_date=datetime(2026, 8, 1), cache_dir=cache
-    )
+    mgr = RinexSatelliteManager.for_station("pbcg", ref_date=datetime(2026, 8, 1), cache_dir=cache)
     assert mgr.download_obs() == fake
 
 
 def test_download_obs_unavailable_returns_none(tmp_path, monkeypatch):
     """Falha pontual no download de obs → None (não levanta)."""
     cache = tmp_path / "rinex"
-    mgr = RinexSatelliteManager.for_station(
-        "pbcg", ref_date=datetime(2026, 8, 1), cache_dir=cache
-    )
+    mgr = RinexSatelliteManager.for_station("pbcg", ref_date=datetime(2026, 8, 1), cache_dir=cache)
 
     def boom(self, file_types, label, doy):  # noqa: ARG001
         msg = "sem obs para a data"

@@ -57,9 +57,7 @@ def _unique_satellites(ephemerides: list[BroadcastEphemeris]) -> list[Satellite]
     seen: dict[str, Satellite] = {}
     for eph in ephemerides:
         if eph.sv not in seen:
-            seen[eph.sv] = Satellite(
-                sv=eph.sv, constellation=constellation_from_sv(eph.sv)
-            )
+            seen[eph.sv] = Satellite(sv=eph.sv, constellation=constellation_from_sv(eph.sv))
     return list(seen.values())
 
 
@@ -147,13 +145,13 @@ class RinexSatelliteManager:
     # Construção
     # ------------------------------------------------------------------
     @classmethod
-    def from_nav(cls, path: str | Path) -> "RinexSatelliteManager":
+    def from_nav(cls, path: str | Path) -> RinexSatelliteManager:
         """Carrega um arquivo RINEX NAV (texto) e cria os satélites."""
         nav = RinexReader().load_nav(path)
         return cls.from_nav_dataset(nav)
 
     @classmethod
-    def from_nav_dataset(cls, nav: xr.Dataset) -> "RinexSatelliteManager":
+    def from_nav_dataset(cls, nav: xr.Dataset) -> RinexSatelliteManager:
         """Cria os satélites a partir de um dataset NAV já parseado.
 
         Aceita tanto o resultado de ``RinexReader.load_nav`` quanto caches
@@ -174,7 +172,7 @@ class RinexSatelliteManager:
         ref_date: datetime,
         cache_dir: str | Path | None = None,
         source: Any = None,
-    ) -> "RinexSatelliteManager":
+    ) -> RinexSatelliteManager:
         """Manager configurado para uma estação/data — os dados (cache ou
         download RINEX NAV) são carregados sob demanda no ``build``.
         """
@@ -209,10 +207,7 @@ class RinexSatelliteManager:
         res = build_download_use_case(self._cache_dir).run(req, self._cache_dir)
         files = [p for p in res.files.get(file_types[0], []) if doy in p.stem]
         if not files:
-            msg = (
-                f"download RINEX {label} não retornou arquivo para "
-                f"{self._ref_date:%Y-%m-%d}"
-            )
+            msg = f"download RINEX {label} não retornou arquivo para {self._ref_date:%Y-%m-%d}"
             raise RuntimeError(msg)
         return files[0]
 
@@ -496,9 +491,7 @@ class RinexSatelliteManager:
         station = station or DEFAULT_STATION_POSITION
         best = self._best_ephemeris_per_sv()
         if not best:
-            ds = xr.Dataset(
-                coords={"sv": [], "time": np.array([], dtype="datetime64[ns]")}
-            )
+            ds = xr.Dataset(coords={"sv": [], "time": np.array([], dtype="datetime64[ns]")})
             self._tracks = ds
             return ds
 
@@ -520,9 +513,7 @@ class RinexSatelliteManager:
             t_end = end or (center + timedelta(hours=3))
             times = _time_grid(t_start, t_end, step_s)
         if not times:
-            ds = xr.Dataset(
-                coords={"sv": [], "time": np.array([], dtype="datetime64[ns]")}
-            )
+            ds = xr.Dataset(coords={"sv": [], "time": np.array([], dtype="datetime64[ns]")})
             self._tracks = ds
             return ds
 
@@ -537,9 +528,9 @@ class RinexSatelliteManager:
                 try:
                     # ``propagate_kepler`` com um único datetime já retorna a
                     # posição ECEF (3,); NÃO indexar [0] (pegaria só a componente x).
-                    pos = lambda tt, _eph=eph: propagate_kepler(_eph, tt)  # noqa: E731
+                    pos = lambda tt, _eph=eph: propagate_kepler(_eph, tt)
                     sp = sky.ecef_to_sky(pos, t)
-                except Exception:  # noqa: BLE001 - propaga NaN p/ SV problemático
+                except Exception:  # noqa: BLE001, S112 - propaga NaN p/ SV problemático
                     continue
                 data["alt_deg"][i, j] = sp.alt_deg
                 data["az_deg"][i, j] = sp.az_deg
@@ -558,9 +549,7 @@ class RinexSatelliteManager:
                 "sv": svs,
                 "time": np.asarray(
                     [
-                        t.astimezone(UTC).replace(tzinfo=None)
-                        if t.tzinfo is not None
-                        else t
+                        t.astimezone(UTC).replace(tzinfo=None) if t.tzinfo is not None else t
                         for t in times
                     ],
                     dtype="datetime64[ns]",
@@ -602,10 +591,7 @@ class RinexSatelliteManager:
     def summary(self) -> str:
         df = self.list_satellites()
         counts = df["constellation"].value_counts().to_dict()
-        return (
-            f"RinexSatelliteManager — {len(self.satellites)} satélites "
-            f"(constelações: {counts})"
-        )
+        return f"RinexSatelliteManager — {len(self.satellites)} satélites (constelações: {counts})"
 
     def __len__(self) -> int:
         return len(self.satellites)

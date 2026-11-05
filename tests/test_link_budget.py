@@ -96,9 +96,7 @@ def test_to_signals_reference_updates_eirp(use_case):
             "constellation": "GPS",
             "eirp_dbw": 24.6,
             "rhcp": True,
-            "signals": [
-                {"name": "L5", "frequency": "1176.45 MHz", "modulation": "BPSK(10)"}
-            ],
+            "signals": [{"name": "L5", "frequency": "1176.45 MHz", "modulation": "BPSK(10)"}],
         }
     ]
     out = use_case.to_signals_reference(estimates, base=base)

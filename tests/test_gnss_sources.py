@@ -36,9 +36,7 @@ def _request(source: RinexSource) -> RinexRequest:
 def test_rbmc_url_pattern() -> None:
     # Observação: RINEX 3 (CRINEX 15 s, ID 9 chars) — padrão atual.
     obs_url = build_rbmc_url(_request(RinexSource.RBMC), RinexFileType.OBS, DAY)
-    assert obs_url.endswith(
-        "/dados_RINEX3/2024/162/BRAZ00BRA_R_20241620000_01D_15S_MO.crx.gz"
-    )
+    assert obs_url.endswith("/dados_RINEX3/2024/162/BRAZ00BRA_R_20241620000_01D_15S_MO.crx.gz")
     assert "geoftp.ibge.gov.br" in obs_url
     # Navegação: RINEX 2 (zip diário legado).
     nav_url = build_rbmc_url(_request(RinexSource.RBMC), RinexFileType.NAV, DAY)

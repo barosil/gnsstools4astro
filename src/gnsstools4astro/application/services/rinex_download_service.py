@@ -117,9 +117,7 @@ class RinexDownloadService:
                         ("fallback", self._source.build_url(request, file_type, day)),
                     ]
                 else:
-                    candidates = [
-                        ("default", self._source.build_url(request, file_type, day))
-                    ]
+                    candidates = [("default", self._source.build_url(request, file_type, day))]
 
                 downloaded: list[Path] = []
                 for kind, url in candidates:
@@ -130,7 +128,7 @@ class RinexDownloadService:
                     )
                     try:
                         downloaded = self._downloader.fetch(url, dest=dest)
-                    except Exception as exc:
+                    except Exception as exc:  # noqa: BLE001 - download multi-fonte best-effort
                         logger.warning(
                             "rinex_download_failed",
                             file_type=file_type.value,

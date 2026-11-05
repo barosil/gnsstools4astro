@@ -122,9 +122,7 @@ class EstimateLinkBudgetUseCase:
             if range_km is None or not np.isfinite(range_km) or range_km <= 0.0:
                 continue
             for band in ref.signals:
-                eirp_dbw, p_rec_w = self.eirp_from_cn0(
-                    cn0, band.frequency_hz, range_km * 1e3
-                )
+                eirp_dbw, p_rec_w = self.eirp_from_cn0(cn0, band.frequency_hz, range_km * 1e3)
                 estimates.append(
                     LinkBudgetEstimate(
                         sv=sv,
