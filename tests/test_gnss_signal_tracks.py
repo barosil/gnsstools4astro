@@ -15,6 +15,8 @@ from gnsstools4astro.domain.signal import (
     received_power_watts,
 )
 from gnsstools4astro.domain.station import GNSSStation
+from gnsstools4astro.infrastructure.ephemeris.broadcast import propagate
+from gnsstools4astro.infrastructure.ephemeris.skyfield import SkyfieldTracks
 from gnsstools4astro.infrastructure.rinex.reader import RinexReader
 
 # Referência do "Previous discussion": C/N0 = 45 dB-Hz → P_rec ≈ 1.27e-16 W;
@@ -59,7 +61,12 @@ def test_signal_estimator_summary() -> None:
 
 def test_track_builder_returns_dataset(gps_nav, glonass_nav, galileo_nav) -> None:
     station = GNSSStation(name="braz", lat_deg=-7.5, lon_deg=-35.0, height_m=10.0)
-    builder = TrackBuilder(parser=RinexReader(), min_alt_deg=5.0)
+    builder = TrackBuilder(
+        parser=RinexReader(),
+        propagator=propagate,
+        skyfactory=SkyfieldTracks,
+        min_alt_deg=5.0,
+    )
     times = [
         datetime(2024, 6, 10, 12, 0, tzinfo=UTC),
         datetime(2024, 6, 10, 13, 0, tzinfo=UTC),

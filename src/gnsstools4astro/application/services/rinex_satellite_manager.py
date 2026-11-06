@@ -22,6 +22,7 @@ Last modified: 2026-08-31
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -37,9 +38,6 @@ from gnsstools4astro.domain.satellite import (
     constellation_from_sv,
 )
 from gnsstools4astro.domain.station import DEFAULT_STATION_POSITION, GNSSStation
-from gnsstools4astro.infrastructure.ephemeris.broadcast import propagate_kepler
-from gnsstools4astro.infrastructure.ephemeris.skyfield import SkyfieldTracks
-from gnsstools4astro.infrastructure.rinex.reader import RinexReader
 
 __all__ = ["RinexAssembled", "RinexSatelliteManager"]
 
@@ -135,10 +133,17 @@ class RinexSatelliteManager:
         satellites: list[Satellite],
         ephemerides: list[BroadcastEphemeris],
         nav: xr.Dataset | None = None,
+        *,
+        reader: Any | None = None,
+        propagator: Callable[[Any, Any], np.ndarray] | None = None,
+        skyfactory: Callable[[GNSSStation], Any] | None = None,
     ) -> None:
         self.satellites = list(satellites)
         self.ephemerides = list(ephemerides)
         self.nav = nav
+        self._reader = reader
+        self._propagator = propagator
+        self._skyfactory = skyfactory
         self._tracks: xr.Dataset | None = None
 
     # ------------------------------------------------------------------
@@ -147,21 +152,34 @@ class RinexSatelliteManager:
     @classmethod
     def from_nav(cls, path: str | Path) -> RinexSatelliteManager:
         """Carrega um arquivo RINEX NAV (texto) e cria os satélites."""
-        nav = RinexReader().load_nav(path)
-        return cls.from_nav_dataset(nav)
+        from gnsstools4astro.infrastructure.rinex.reader import RinexReader
+
+        reader = RinexReader()
+        nav = reader.load_nav(path)
+        return cls.from_nav_dataset(nav, reader=reader)
 
     @classmethod
-    def from_nav_dataset(cls, nav: xr.Dataset) -> RinexSatelliteManager:
+    def from_nav_dataset(
+        cls,
+        nav: xr.Dataset,
+        *,
+        reader: Any | None = None,
+    ) -> RinexSatelliteManager:
         """Cria os satélites a partir de um dataset NAV já parseado.
 
         Aceita tanto o resultado de ``RinexReader.load_nav`` quanto caches
         NetCDF com o mesmo esquema (coords ``time``/``sv``).
         """
-        ephemerides = RinexReader().to_ephemerides(nav)
+        if reader is None:
+            from gnsstools4astro.infrastructure.rinex.reader import RinexReader
+
+            reader = RinexReader()
+        ephemerides = reader.to_ephemerides(nav)
         return cls(
             satellites=_unique_satellites(ephemerides),
             ephemerides=ephemerides,
             nav=nav,
+            reader=reader,
         )
 
     @classmethod
@@ -397,9 +415,12 @@ class RinexSatelliteManager:
             range_means_from_tracks,
         )
         from gnsstools4astro.domain.constellations import get_constellation_signals
-        from gnsstools4astro.infrastructure.rinex.reader import RinexReader
 
-        reader = RinexReader()
+        reader = self._reader
+        if reader is None:
+            from gnsstools4astro.infrastructure.rinex.reader import RinexReader
+
+            reader = RinexReader()
         if isinstance(obs, (str, Path)):
             obs = reader.load_obs(obs)
         cn0_per_sv = reader.mean_cn0_per_sv(obs)
@@ -520,15 +541,27 @@ class RinexSatelliteManager:
         svs = list(best)
         n_sv, n_t = len(svs), len(times)
         data = {v: np.full((n_sv, n_t), np.nan) for v in _TRACK_VARS}
-        sky = SkyfieldTracks(station)
+
+        skyfactory = self._skyfactory
+        propagator = self._propagator
+        if skyfactory is None:
+            from gnsstools4astro.infrastructure.ephemeris.skyfield import SkyfieldTracks
+
+            skyfactory = SkyfieldTracks
+        if propagator is None:
+            from gnsstools4astro.infrastructure.ephemeris.broadcast import propagate_kepler
+
+            propagator = propagate_kepler
+
+        sky = skyfactory(station)
 
         for i, sv in enumerate(svs):
             eph = best[sv]
             for j, t in enumerate(times):
                 try:
-                    # ``propagate_kepler`` com um único datetime já retorna a
+                    # ``propagator`` com um único datetime já retorna a
                     # posição ECEF (3,); NÃO indexar [0] (pegaria só a componente x).
-                    pos = lambda tt, _eph=eph: propagate_kepler(_eph, tt)
+                    pos = lambda tt, _eph=eph: propagator(_eph, tt)
                     sp = sky.ecef_to_sky(pos, t)
                 except Exception:  # noqa: BLE001, S112 - propaga NaN p/ SV problemático
                     continue

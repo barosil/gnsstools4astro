@@ -20,7 +20,7 @@ from typing import Self
 
 import httpx
 from dotenv import find_dotenv, load_dotenv
-from gnsstools4astro.infrastructure.logging_config import (
+from gnsstools4astro.logging_config import (
     get_logger,
     log_http_event,
     log_io_event,

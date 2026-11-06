@@ -21,23 +21,35 @@ from gnsstools4astro.application.use_cases import (
 )
 from gnsstools4astro.domain.constellations import get_constellation_signals
 from gnsstools4astro.infrastructure.ephemeris.broadcast import propagate
+from gnsstools4astro.infrastructure.ephemeris.skyfield import SkyfieldTracks
 from gnsstools4astro.infrastructure.rinex.downloader import RinexDownloader
 from gnsstools4astro.infrastructure.rinex.reader import RinexReader
-from gnsstools4astro.infrastructure.rinex.sources import RinexSourceAdapter
+from gnsstools4astro.infrastructure.rinex.sources import (
+    RinexSourceAdapter,
+    build_cddis_brdc_url,
+)
 
 
 def build_download_use_case(cache_dir: str | Path) -> DownloadRinexUseCase:
     """Constrói o caso de uso de download com fonte padrão e downloader httpx."""
     source = RinexSourceAdapter()
     downloader = RinexDownloader(cache_dir)
-    service = RinexDownloadService(downloader=downloader, source=source)
+    service = RinexDownloadService(
+        downloader=downloader,
+        source=source,
+        rinex3_nav_url_builder=build_cddis_brdc_url,
+    )
     return DownloadRinexUseCase(service)
 
 
 def build_tracks_use_case() -> BuildTracksUseCase:
     """Constrói o caso de uso de tracks com reader georinex e propagador Kepler."""
     parser = RinexReader()
-    builder = TrackBuilder(parser=parser)
+    builder = TrackBuilder(
+        parser=parser,
+        propagator=propagate,
+        skyfactory=SkyfieldTracks,
+    )
     return BuildTracksUseCase(builder)
 
 

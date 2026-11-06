@@ -6,6 +6,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import xarray as xr
@@ -16,9 +17,7 @@ from gnsstools4astro.domain.satellite import (
     constellation_from_sv,
 )
 from gnsstools4astro.domain.station import GNSSStation
-from gnsstools4astro.infrastructure.ephemeris.broadcast import propagate
-from gnsstools4astro.infrastructure.ephemeris.skyfield import SkyfieldTracks
-from gnsstools4astro.infrastructure.logging_config import get_logger
+from gnsstools4astro.logging_config import get_logger
 
 logger = get_logger("gnsstools4astro.application.tracks")
 
@@ -59,10 +58,12 @@ class TrackBuilder:
     def __init__(
         self,
         parser: RinexParserPort,
-        skyfactory: Callable[[GNSSStation], SkyfieldTracks] = SkyfieldTracks,
+        propagator: Callable[[Any, Any], np.ndarray],
+        skyfactory: Callable[[GNSSStation], Any],
         min_alt_deg: float = 0.0,
     ) -> None:
         self._parser = parser
+        self._propagator = propagator
         self._skyfactory = skyfactory
         self._min_alt = min_alt_deg
 
@@ -121,7 +122,7 @@ class TrackBuilder:
         records: list[tuple[datetime, str, float, float, float, float, float]] = []
         for eph in ephemerides:
             sv = eph.sv
-            ecef_fn = lambda t, e=eph: propagate(e, t)
+            ecef_fn = lambda t, e=eph: self._propagator(e, t)
             for t in grid:
                 try:
                     sp = sky.ecef_to_sky(ecef_fn, t)

@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
 from gnsstools4astro.application.ports import RinexDownloaderPort, RinexSourcePort
 from gnsstools4astro.domain.rinex import RinexFileType, RinexRequest
-from gnsstools4astro.infrastructure.logging_config import get_logger
-from gnsstools4astro.infrastructure.rinex.sources import build_cddis_brdc_url
+from gnsstools4astro.logging_config import get_logger
 
 logger = get_logger("gnsstools4astro.application.download")
 
@@ -81,9 +81,12 @@ class RinexDownloadService:
         self,
         downloader: RinexDownloaderPort,
         source: RinexSourcePort,
+        *,
+        rinex3_nav_url_builder: Callable[[datetime], str] | None = None,
     ) -> None:
         self._downloader = downloader
         self._source = source
+        self._rinex3_nav_url_builder = rinex3_nav_url_builder
 
     def download(
         self,
@@ -113,7 +116,7 @@ class RinexDownloadService:
                 # (RINEX 2 na RBMC, RINEX 3 por estação no CDDIS).
                 if file_type is RinexFileType.NAV:
                     candidates = [
-                        ("rinex3", build_cddis_brdc_url(day)),
+                        ("rinex3", self._rinex3_nav_url_builder(day)),
                         ("fallback", self._source.build_url(request, file_type, day)),
                     ]
                 else:
