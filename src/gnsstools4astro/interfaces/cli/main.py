@@ -28,8 +28,8 @@ from gnsstools4astro.domain.station import (
     DEFAULT_STATION_POSITION,
     GNSSStation,
 )
-from gnsstools4astro.logging_config import configure_logging
 from gnsstools4astro.infrastructure.rinex.reader import RinexReader
+from gnsstools4astro.logging_config import configure_logging
 
 
 class GNSS4AstroCLIUseCases:
